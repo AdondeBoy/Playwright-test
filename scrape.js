@@ -1,5 +1,7 @@
 import { chromium } from 'playwright';
 import fs from 'fs/promises';
+import * as readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
 
 // Launch the local Microsoft Edge engine already installed on Windows
 const browser = await chromium.launch({
@@ -10,7 +12,7 @@ const browser = await chromium.launch({
 
 const page = await browser.newPage();
 
-console.log('Navigating to Books to Scrape...');
+console.log('Navigating to Chollometro...');
 await page.goto('https://www.chollometro.com/categorias/videojuegos?sortBy=new');
 
 // Locate all product cards
@@ -48,6 +50,37 @@ console.log(`Successfully saved ${chollos.length} chollos to chollos.json`);
 // 2. Capture a full-page screenshot
 await page.screenshot({ path: 'catalog_chromium.png', fullPage: true });
 console.log('Saved catalog_chromium.png');
+
+// 3. Print chollos
+console.log('Here are the chollos found:');
+chollos.forEach((chollo, index) => {
+  console.log(`${index + 1}. ${chollo.title} - ${chollo.price} - ${chollo.age}`);
+});
+
+// get user response from stdin
+
+const rl = readline.createInterface({ input, output });
+
+let clickedChollo;
+
+const cholloIndex = await rl.question('Enter the number of the chollo you want to click: ');
+const cholloIndexInt = parseInt(cholloIndex, 10) - 1;
+
+if (cholloIndexInt >= 0 && cholloIndexInt < chollos.length) {
+  console.log(`You selected chollo ${cholloIndexInt + 1}: ${chollos[cholloIndexInt].title}`);
+  clickedChollo = cholloCards.nth(cholloIndexInt);
+} else {
+  console.log('Invalid selection.');
+}
+rl.close();
+
+if (clickedChollo) {
+  // Click on the selected chollo
+  console.log(`Clicking on chollo: ${clickedChollo}`);
+  await clickedChollo.click();
+  const description = await page.locator('[data-t="description"]').textContent();
+  console.log(`Description: ${description}`);
+}
 
 // Clean up
 await browser.close();
