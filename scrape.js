@@ -15,6 +15,26 @@ const page = await browser.newPage();
 console.log('Navigating to Chollometro...');
 await page.goto('https://www.chollometro.com/categorias/videojuegos?sortBy=new');
 
+// No cookies please (button element with data-t="cookie-banner")
+const rejectCookies = page.locator('button[data-t="rejectAll"]');
+
+try {
+  // Cookies pop up takes a bit to show up
+  await rejectCookies.waitFor({
+    state: 'visible',
+    timeout: 5_000
+  });
+
+  await rejectCookies.click({ timeout: 5_000 });
+  console.log('Cookies rejected.');
+} catch (error) {
+  if (!await rejectCookies.count()) {
+    console.log('Cookie banner did not appear.');
+  } else {
+    throw error;
+  }
+}
+
 // Locate all product cards
 const cholloCards = page.locator('article.thread--deal');
 const count = await cholloCards.count();
@@ -77,7 +97,11 @@ rl.close();
 if (clickedChollo) {
   // Click on the selected chollo
   console.log(`Clicking on chollo: ${clickedChollo}`);
-  await clickedChollo.click();
+  const clickable = clickedChollo.locator('a.thread-link');
+  console.log('Matching links:', await clickable.count());
+  console.log('Clicking the link...');
+  console.log(clickable);
+  await clickable.click();
   const description = await page.locator('[data-t="description"]').textContent();
   console.log(`Description: ${description}`);
 }
